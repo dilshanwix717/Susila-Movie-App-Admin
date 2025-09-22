@@ -1,0 +1,46 @@
+name: Deploy Remotely
+on:
+  push:
+    branches: [ main ]
+ 
+jobs:
+  Deploy-Remotely:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js 20.x to Build
+      uses: actions/setup-node@v2
+      with:
+        node-version: 20.x
+        
+    - name: Create .env File with Firebase Variables
+      run: |
+        touch .env
+        echo "CHOKIDAR_USEPOLLING=${{ secrets.CHOKIDAR_USEPOLLING }}" >> .env
+        echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" >> .env
+        echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> .env
+        echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> .env
+        echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" >> .env
+        echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
+        echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> .env
+        echo "VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}" >> .env
+        echo "VITE_FIREBASE_CPP_API_KEY=${{ secrets.VITE_FIREBASE_CPP_API_KEY }}" >> .env
+        echo "VITE_FIREBASE_CPP_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_CPP_AUTH_DOMAIN }}" >> .env
+        echo "VITE_FIREBASE_CPP_PROJECT_ID=${{ secrets.VITE_FIREBASE_CPP_PROJECT_ID }}" >> .env
+        echo "VITE_FIREBASE_CPP_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_CPP_STORAGE_BUCKET }}" >> .env
+        echo "VITE_FIREBASE_CPP_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_CPP_MESSAGING_SENDER_ID }}" >> .env
+        echo "VITE_FIREBASE_CPP_APP_ID=${{ secrets.VITE_FIREBASE_CPP_APP_ID }}" >> .env
+        echo "VITE_FIREBASE_CPP_MEASUREMENT_ID=${{ secrets.VITE_FIREBASE_CPP_MEASUREMENT_ID }}" >> .env
+        
+    - run: npm install --legacy-peer-deps
+    - run: CI=false npm run build
+    
+    - name: Transfer Build Folder on EC2 Instance
+      uses: easingthemes/ssh-deploy@v2.1.4
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
+        REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+        REMOTE_USER: ${{ secrets.DEPLOY_USER }}
+        REMOTE_PORT: ${{ secrets.DEPLOY_PORT }}
+        SOURCE: "build/"
+        TARGET: ${{ secrets.DEPLOY_TARGET }}
